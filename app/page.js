@@ -1,7 +1,9 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-// Kitab Məlumatları
+/* ───────────────────────────────────────────────
+   MƏLUMATLAR (book/accessory content olduğu kimi saxlanılıb)
+─────────────────────────────────────────────── */
 const BOOKS_DATA = [
   {id:1,  title:"Əli və Nino",          author:"Kurban Said",             price:12.99, isNewBook: true,  cat:"Bədii",        badge:"best"},
   {id:2,  title:"Dəli Kür",             author:"İlyas Əfəndiyev",         price:7.50,  isNewBook: false, cat:"Bədii",        badge:null},
@@ -18,28 +20,118 @@ const SALE_DATA = [
   {id:10, title:"Sapiens",              author:"Yuval Noah Harari",       price:9.00,  old:20.00, isNewBook: false, cat:"Tarix",        badge:"sale"},
 ];
 
-// Aksesuar Qiymətləri (30 qəpik ayraclar və 1.50 ₼ paketləmə)
 const ACCESSORIES_DATA = [
   {id:"a1", title:"Premium Hədiyyə Paketləməsi", desc:"Xüsusi möhürlü və qoxulu sənətkar kağızı", price:1.50, type:"packaging"},
   {id:"a2", title:"Minimalist Kitab Ayracı",    desc:"Əlimizdə olan xüsusi dizaynlı incə ayrac", price:0.30, type:"bookmark"},
   {id:"a3", title:"Klassik Estetik Ayrac",       desc:"Kitabsevərlər üçün təmiz vizual toxunuş", price:0.30, type:"bookmark"},
 ];
 
+/* ───────────────────────────────────────────────
+   DİL TƏRCÜMƏLƏRİ (interfeys mətnləri üçün)
+─────────────────────────────────────────────── */
+const DICT = {
+  az: {
+    all: "Hamısı", newBooks: "Yeni Kitablar", usedBooks: "İkinci Əl", accessories: "Ayrac & Paketləmə",
+    search: "Axtar...", cart: "Səbət",
+    heroTag: "Yeni, İkinci Əl və Xüsusi Ayraclar",
+    heroTitle: "Hər kitab yeni bir hekayədir.",
+    heroDesc: "İstər tam yeni premium nəşrlər, istərsə də büdcənizə uyğun təmiz ikinci əl variantlar. Əl işi ayraclar və xüsusi paketləmə ilə.",
+    heroBtn: "Kitablara bax", heroLink: "Ayraclar və Paketləmə →",
+    sectionAll: "Bütün Kitablar", sectionNew: "Yeni Kitablar", sectionUsed: "İkinci Əl Kitablar",
+    cats: ['Hamısı','Bədii','Elmi','Uşaq','Biznes','Özünüinkişaf','Tarix'],
+    bestseller: "Bestseller", newTag: "Yeni", usedTag: "İkinci Əl", saleTag: "Endirim",
+    addBtn: "Əlavə et", added: "Səbətdə",
+    accTitle: "Kitab Ayracları & Paketləmə",
+    accDesc: "Sizin üçün hazırladığımız xüsusi kitab ayracları və premium estetik hədiyyə paketləmələri.",
+    accAdd: "Səbətə at", accAdded: "Əlavə edildi",
+    saleTitle: "Xüsusi Təkliflər",
+    footerDesc: "Naxçıvanın minimalist dizaynlı premium kitab və oxu aksesuarları mağazası.",
+    footerCollections: "Koleksiyalar", footerNewEd: "Yeni Nəşrlər", footerUsedB: "İkinci Əl Kitablar", footerBookmarks: "Kitab Ayracları",
+    footerService: "Xidmət", footerDelivery: "Çatdırılma: Naxçıvan", footerWhatsapp: "WhatsApp Sifariş",
+    footerRights: "Bütün hüquqlar qorunur.",
+    cartTitle: "Səbətiniz", cartEmpty: "Səbətiniz boşdur.",
+    suggText: "Bu sifarişi estetik hədiyyə paketi etmək istəyirsiniz?", suggBtn: "+ 1.50 ₼ Əlavə Et",
+    cartTotal: "Ümumi Məbləğ:", checkout: "Sifarişi WhatsApp ilə Tamamla",
+    addedToast: (title) => `"${title}" səbətə əlavə edildi`,
+    checkoutToast: "Sifarişiniz WhatsApp-a yönləndirildi!",
+    waMsgIntro: "Salam, folio. mağazasından sifariş etmək istəyirəm:",
+    waNew: "(Yeni)", waUsed: "(2-ci Əl)", waUnit: "ədəd", waTotal: "Cəmi Məbləğ:", waAddr: "Çatdırılma ünvanı:", waConfirm: "Sifarişi təsdiqləməyinizi gözləyirəm.",
+  },
+  tr: {
+    all: "Tümü", newBooks: "Yeni Kitaplar", usedBooks: "İkinci El", accessories: "Ayraç & Paketleme",
+    search: "Ara...", cart: "Sepet",
+    heroTag: "Yeni, İkinci El ve Özel Ayraçlar",
+    heroTitle: "Her kitap yeni bir hikayedir.",
+    heroDesc: "İster yepyeni premium baskılar, isterse bütçenize uygun temiz ikinci el seçenekler. El yapımı ayraçlar ve özel paketleme ile.",
+    heroBtn: "Kitaplara göz at", heroLink: "Ayraçlar ve Paketleme →",
+    sectionAll: "Tüm Kitaplar", sectionNew: "Yeni Kitaplar", sectionUsed: "İkinci El Kitaplar",
+    cats: ['Tümü','Edebiyat','Bilim','Çocuk','İş','Kişisel Gelişim','Tarih'],
+    bestseller: "Çok Satan", newTag: "Yeni", usedTag: "İkinci El", saleTag: "İndirim",
+    addBtn: "Ekle", added: "Sepette",
+    accTitle: "Kitap Ayraçları & Paketleme",
+    accDesc: "Sizin için hazırladığımız özel kitap ayraçları ve premium estetik hediye paketleri.",
+    accAdd: "Sepete ekle", accAdded: "Eklendi",
+    saleTitle: "Özel Teklifler",
+    footerDesc: "Nahçıvan'ın minimalist tasarımlı premium kitap ve okuma aksesuarları mağazası.",
+    footerCollections: "Koleksiyonlar", footerNewEd: "Yeni Baskılar", footerUsedB: "İkinci El Kitaplar", footerBookmarks: "Kitap Ayraçları",
+    footerService: "Hizmet", footerDelivery: "Teslimat: Nahçıvan", footerWhatsapp: "WhatsApp Sipariş",
+    footerRights: "Tüm hakları saklıdır.",
+    cartTitle: "Sepetiniz", cartEmpty: "Sepetiniz boş.",
+    suggText: "Bu siparişi estetik hediye paketi yapmak ister misiniz?", suggBtn: "+ 1.50 ₼ Ekle",
+    cartTotal: "Toplam Tutar:", checkout: "Siparişi WhatsApp ile Tamamla",
+    addedToast: (title) => `"${title}" sepete eklendi`,
+    checkoutToast: "Siparişiniz WhatsApp'a yönlendirildi!",
+    waMsgIntro: "Merhaba, folio. mağazasından sipariş vermek istiyorum:",
+    waNew: "(Yeni)", waUsed: "(İkinci El)", waUnit: "adet", waTotal: "Toplam Tutar:", waAddr: "Teslimat adresi:", waConfirm: "Siparişin onaylanmasını bekliyorum.",
+  },
+  en: {
+    all: "All", newBooks: "New Books", usedBooks: "Used", accessories: "Bookmarks & Wrapping",
+    search: "Search...", cart: "Cart",
+    heroTag: "New, Used & Handcrafted Bookmarks",
+    heroTitle: "Every book is a new story.",
+    heroDesc: "Brand-new premium editions or clean, budget-friendly used copies — paired with handcrafted bookmarks and gift wrapping.",
+    heroBtn: "Browse books", heroLink: "Bookmarks & Wrapping →",
+    sectionAll: "All Books", sectionNew: "New Books", sectionUsed: "Used Books",
+    cats: ['All','Fiction','Science','Children','Business','Self-Help','History'],
+    bestseller: "Bestseller", newTag: "New", usedTag: "Used", saleTag: "Sale",
+    addBtn: "Add", added: "In cart",
+    accTitle: "Bookmarks & Gift Wrapping",
+    accDesc: "Handcrafted bookmarks and premium aesthetic gift wrapping, made for you.",
+    accAdd: "Add to cart", accAdded: "Added",
+    saleTitle: "Special Offers",
+    footerDesc: "Nakhchivan's minimalist premium book and reading accessories store.",
+    footerCollections: "Collections", footerNewEd: "New Editions", footerUsedB: "Used Books", footerBookmarks: "Bookmarks",
+    footerService: "Service", footerDelivery: "Delivery: Nakhchivan", footerWhatsapp: "Order on WhatsApp",
+    footerRights: "All rights reserved.",
+    cartTitle: "Your Cart", cartEmpty: "Your cart is empty.",
+    suggText: "Would you like to make this order an aesthetic gift package?", suggBtn: "+ 1.50 ₼ Add",
+    cartTotal: "Total Amount:", checkout: "Complete Order via WhatsApp",
+    addedToast: (title) => `"${title}" added to cart`,
+    checkoutToast: "Your order was sent to WhatsApp!",
+    waMsgIntro: "Hello, I would like to order from folio.:",
+    waNew: "(New)", waUsed: "(Used)", waUnit: "pcs", waTotal: "Total Amount:", waAddr: "Delivery address:", waConfirm: "Looking forward to your confirmation.",
+  },
+};
+
+const CAT_KEYS = ['Hamısı','Bədii','Elmi','Uşaq','Biznes','Özünüinkişaf','Tarix'];
+
 export default function Home() {
   const [cart, setCart] = useState({});
   const [catFilter, setCatFilter] = useState('');
-  const [conditionFilter, setConditionFilter] = useState('all'); 
+  const [conditionFilter, setConditionFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [theme, setTheme] = useState('dark');
+  const [lang, setLang] = useState('az');
   const [toast, setToast] = useState({ show: false, msg: '' });
 
-  // WhatsApp Nömrən
-  const WHATSAPP_NUMBER = "994606777500"; 
+  const t = DICT[lang];
+  const WHATSAPP_NUMBER = "994606777500";
 
-  // Brauzer tabındakı başlığı və dünya işarəsini premium ikonla əvəz etmək üçün:
+  /* Tab başlığı + ikon */
   useEffect(() => {
     document.title = "folio. — Premium Book Store";
-    
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');
@@ -47,9 +139,24 @@ export default function Home() {
       document.getElementsByTagName('head')[0].appendChild(link);
     }
     link.type = 'image/png';
-    // Sənin üçün seçdiyim minimalist parıldayan premium ulduz ikonu:
     link.href = 'https://img.icons8.com/ios-filled/50/ffffff/sparkling.png';
   }, []);
+
+  /* Scroll-reveal: section-lar sıra ilə görünəndə yuxarı sürüşərək düşür */
+  const revealRefs = useRef([]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('in-view');
+        });
+      },
+      { threshold: 0.15 }
+    );
+    revealRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+  const addReveal = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
 
   const showToast = (msg) => {
     setToast({ show: true, msg });
@@ -59,12 +166,9 @@ export default function Home() {
   const addToCart = (item) => {
     setCart(prev => {
       const existing = prev[item.id];
-      return {
-        ...prev,
-        [item.id]: existing ? { ...existing, qty: existing.qty + 1 } : { ...item, qty: 1 }
-      };
+      return { ...prev, [item.id]: existing ? { ...existing, qty: existing.qty + 1 } : { ...item, qty: 1 } };
     });
-    showToast(`"${item.title}" səbətə əlavə edildi`);
+    showToast(t.addedToast(item.title));
   };
 
   const changeQty = (id, delta) => {
@@ -73,49 +177,38 @@ export default function Home() {
       if (!item) return prev;
       const newQty = item.qty + delta;
       const updated = { ...prev };
-      if (newQty <= 0) {
-        delete updated[id];
-      } else {
-        updated[id] = { ...item, qty: newQty };
-      }
+      if (newQty <= 0) delete updated[id]; else updated[id] = { ...item, qty: newQty };
       return updated;
     });
   };
 
   const removeItem = (id) => {
-    setCart(prev => {
-      const updated = { ...prev };
-      delete updated[id];
-      return updated;
-    });
+    setCart(prev => { const updated = { ...prev }; delete updated[id]; return updated; });
   };
 
   const handleCheckoutWhatsApp = () => {
     const items = Object.values(cart);
     if (items.length === 0) return;
-
     let total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    let messageText = `Salam, folio. mağazasından sifariş etmək istəyirəm:\n\n`;
+
+    let messageText = `${t.waMsgIntro}\n\n`;
     items.forEach((item, index) => {
-      const typeLabel = item.isNewBook === true ? " (Yeni)" : item.isNewBook === false ? " (2-ci Əl)" : " (Aksesuar)";
-      messageText += `${index + 1}. 📦 ${item.title}${typeLabel} - ${item.qty} ədəd (${(item.price * item.qty).toFixed(2)} ₼)\n`;
+      const typeLabel = item.isNewBook === true ? ` ${t.waNew}` : item.isNewBook === false ? ` ${t.waUsed}` : '';
+      messageText += `${index + 1}. 📦 ${item.title}${typeLabel} - ${item.qty} ${t.waUnit} (${(item.price * item.qty).toFixed(2)} ₼)\n`;
     });
-    
-    messageText += `\n💰 *Cəmi Məbləğ:* ${total.toFixed(2)} ₼\n📍 *Çatdırılma ünvanı:* Naxçıvan\n\nSifarişi təsdiqləməyinizi gözləyirəm.`;
+    messageText += `\n💰 *${t.waTotal}* ${total.toFixed(2)} ₼\n📍 *${t.waAddr}* Naxçıvan\n\n${t.waConfirm}`;
 
     const encodedMessage = encodeURIComponent(messageText);
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
-    
+
     setCart({});
     setIsCartOpen(false);
-    showToast('Sifarişiniz WhatsApp-a yönləndirildi! 🚀');
+    showToast(t.checkoutToast);
   };
 
   const filteredBooks = BOOKS_DATA.filter(b => {
     const matchesCat = catFilter === '' || b.cat === catFilter;
     const matchesSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.author.toLowerCase().includes(searchQuery.toLowerCase());
-    
     if (conditionFilter === 'new') return matchesCat && matchesSearch && b.isNewBook;
     if (conditionFilter === 'used') return matchesCat && matchesSearch && !b.isNewBook;
     return matchesCat && matchesSearch;
@@ -125,92 +218,130 @@ export default function Home() {
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
   const cartTotal = cartItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
+  const goTo = (cond) => { setConditionFilter(cond); setIsMenuOpen(false); window.location.href = '#books'; };
+
   return (
-    <div style={{ backgroundColor: '#000000', color: '#f5f5f7', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      
-      {/* ── FLOATING NAVBAR ── */}
+    <div className={`app-root theme-${theme}`}>
+
+      {/* ── NAVBAR ── */}
       <div className="nav-wrapper">
         <nav className="apple-nav-floating">
           <div className="nav-container">
-            <a href="#" className="nav-logo-apple">
-              folio<span className="logo-dot">.</span>
-            </a>
+            <a href="#" className="nav-logo-apple">folio<span className="logo-dot">.</span></a>
+
             <ul className="nav-links">
-              <li><button className={conditionFilter === 'all' ? 'active-link' : ''} onClick={() => { setConditionFilter('all'); window.location.href='#books'; }}>Hamısı</button></li>
-              <li><button className={conditionFilter === 'new' ? 'active-link' : ''} onClick={() => { setConditionFilter('new'); window.location.href='#books'; }}>Yeni Kitablar</button></li>
-              <li><button className={conditionFilter === 'used' ? 'active-link' : ''} onClick={() => { setConditionFilter('used'); window.location.href='#books'; }}>İkinci Əl</button></li>
-              <li><a href="#accessories">Ayrac & Paketləmə</a></li>
+              <li><button className={conditionFilter === 'all' ? 'active-link' : ''} onClick={() => goTo('all')}>{t.all}</button></li>
+              <li><button className={conditionFilter === 'new' ? 'active-link' : ''} onClick={() => goTo('new')}>{t.newBooks}</button></li>
+              <li><button className={conditionFilter === 'used' ? 'active-link' : ''} onClick={() => goTo('used')}>{t.usedBooks}</button></li>
+              <li><a href="#accessories">{t.accessories}</a></li>
             </ul>
+
             <div className="nav-right">
               <div className="nav-search">
-                <input 
-                  type="text" 
-                  placeholder="Axtar..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                <input type="text" placeholder={t.search} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
+
+              <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value)} aria-label="Language">
+                <option value="az">AZ</option>
+                <option value="tr">TR</option>
+                <option value="en">EN</option>
+              </select>
+
+              <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
+                {theme === 'dark' ? '☀' : '☾'}
+              </button>
+
               <button className="cart-btn" onClick={() => setIsCartOpen(true)}>
-                <span>Səbət</span>
+                <span>{t.cart}</span>
                 <span className="cart-count">{cartCount}</span>
+              </button>
+
+              <button className="hamburger" onClick={() => setIsMenuOpen(true)} aria-label="Menu">
+                <span></span><span></span><span></span>
               </button>
             </div>
           </div>
         </nav>
       </div>
 
-      {/* ── HERO SECTION ── */}
+      {/* ── MOBİL MENYU ── */}
+      {isMenuOpen && <div className="mobile-overlay" onClick={() => setIsMenuOpen(false)}></div>}
+      <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
+        <div className="mobile-menu-hdr">
+          <span className="nav-logo-apple">folio<span className="logo-dot">.</span></span>
+          <button className="close-cart" onClick={() => setIsMenuOpen(false)}>✕</button>
+        </div>
+        <div className="mobile-search">
+          <input type="text" placeholder={t.search} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
+        <button className="mobile-link" onClick={() => goTo('all')}>{t.all}</button>
+        <button className="mobile-link" onClick={() => goTo('new')}>{t.newBooks}</button>
+        <button className="mobile-link" onClick={() => goTo('used')}>{t.usedBooks}</button>
+        <a className="mobile-link" href="#accessories" onClick={() => setIsMenuOpen(false)}>{t.accessories}</a>
+
+        <div className="mobile-menu-footer">
+          <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value)}>
+            <option value="az">AZ</option>
+            <option value="tr">TR</option>
+            <option value="en">EN</option>
+          </select>
+          <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+            {theme === 'dark' ? '☀ Light' : '☾ Dark'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── HERO (tam ekran) ── */}
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-content">
-            <div className="hero-tag">Yeni, İkinci Əl və Xüsusi Ayraclar</div>
-            <h1>Hər kitab yeni bir hekayədir.</h1>
-            <p className="hero-desc">İstər tam yeni premium nəşrlər, istərsə də büdcənizə uyğun təmiz ikinci əl variantlar. Əl işi ayraclar və xüsusi paketləmə ilə.</p>
+            <div className="hero-tag">{t.heroTag}</div>
+            <h1>{t.heroTitle}</h1>
+            <p className="hero-desc">{t.heroDesc}</p>
             <div className="hero-actions">
-              <a href="#books" className="btn-apple-primary">Kitablara bax</a>
-              <a href="#accessories" className="btn-apple-link">Ayraclar və Paketləmə →</a>
+              <a href="#books" className="btn-apple-primary">{t.heroBtn}</a>
+              <a href="#accessories" className="btn-apple-link">{t.heroLink}</a>
             </div>
           </div>
-          
           <div className="hero-visual">
             <div className="apple-book-mockup">
               <div className="book-spine"></div>
               <div className="book-cover-content">
                 <div className="mock-logo">FOLIO.</div>
-                <div className="mock-title">Yeniləndi</div>
+                <div className="mock-title">{lang === 'en' ? 'Updated' : lang === 'tr' ? 'Yenilendi' : 'Yeniləndi'}</div>
                 <div className="mock-author">2026 Collection</div>
               </div>
             </div>
           </div>
         </div>
+        <div className="scroll-hint">↓</div>
       </section>
 
-      {/* ── KİTABLAR BÖLMƏSİ ── */}
-      <section className="section" id="books">
+      {/* ── KİTABLAR ── */}
+      <section className="section reveal" id="books" ref={addReveal}>
         <div className="section-head-flex">
           <h2 className="section-title">
-            {conditionFilter === 'all' && "Bütün Kitablar"}
-            {conditionFilter === 'new' && "Yeni Kitablar"}
-            {conditionFilter === 'used' && "İkinci Əl Kitablar"}
+            {conditionFilter === 'all' && t.sectionAll}
+            {conditionFilter === 'new' && t.sectionNew}
+            {conditionFilter === 'used' && t.sectionUsed}
           </h2>
-          
           <div className="condition-switcher">
-            <button className={conditionFilter === 'all' ? 'active' : ''} onClick={() => setConditionFilter('all')}>Hamısı</button>
-            <button className={conditionFilter === 'new' ? 'active' : ''} onClick={() => setConditionFilter('new')}>Yeni</button>
-            <button className={conditionFilter === 'used' ? 'active' : ''} onClick={() => setConditionFilter('used')}>İkinci Əl</button>
+            <button className={conditionFilter === 'all' ? 'active' : ''} onClick={() => setConditionFilter('all')}>{t.all}</button>
+            <button className={conditionFilter === 'new' ? 'active' : ''} onClick={() => setConditionFilter('new')}>{t.newBooks}</button>
+            <button className={conditionFilter === 'used' ? 'active' : ''} onClick={() => setConditionFilter('used')}>{t.usedBooks}</button>
           </div>
         </div>
 
         <div className="cat-pills">
-          {['Hamısı', 'Bədii', 'Elmi', 'Uşaq', 'Biznes', 'Özünüinkişaf', 'Tarix'].map((cat) => (
-            <button 
-              key={cat}
-              className={`pill ${((cat === 'Hamısı' && catFilter === '') || catFilter === cat) ? 'active' : ''}`}
-              onClick={() => setCatFilter(cat === 'Hamısı' ? '' : cat)}
-            >
-              {cat}
-            </button>
-          ))}
+          {t.cats.map((label, i) => {
+            const key = CAT_KEYS[i];
+            return (
+              <button key={key} className={`pill ${((key === 'Hamısı' && catFilter === '') || catFilter === key) ? 'active' : ''}`}
+                onClick={() => setCatFilter(key === 'Hamısı' ? '' : key)}>
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="books-grid">
@@ -221,20 +352,17 @@ export default function Home() {
                   <span className="book-initial">{b.title[0]}</span>
                 </div>
                 <span className={`condition-tag ${b.isNewBook ? 'tag-new-book' : 'tag-used-book'}`}>
-                  {b.isNewBook ? 'Yeni' : 'İkinci Əl'}
+                  {b.isNewBook ? t.newTag : t.usedTag}
                 </span>
-                {b.badge && <span className={`book-badge badge-${b.badge}`}>{b.badge === 'best' ? 'Bestseller' : 'Yeni'}</span>}
+                {b.badge && <span className={`book-badge badge-${b.badge}`}>{b.badge === 'best' ? t.bestseller : t.newTag}</span>}
               </div>
               <div className="book-body">
                 <div className="book-title" title={b.title}>{b.title}</div>
                 <div className="book-author">{b.author}</div>
                 <div className="book-footer">
                   <span className="price-main">{b.price.toFixed(2)} ₼</span>
-                  <button 
-                    className={`add-btn ${cart[b.id] ? 'added' : ''}`}
-                    onClick={() => addToCart(b)}
-                  >
-                    {cart[b.id] ? 'Səbətdə' : 'Əlavə et'}
+                  <button className={`add-btn ${cart[b.id] ? 'added' : ''}`} onClick={() => addToCart(b)}>
+                    {cart[b.id] ? t.added : t.addBtn}
                   </button>
                 </div>
               </div>
@@ -243,29 +371,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── AKSESUARLAR BÖLMƏSİ ── */}
-      <section className="section section-dark-bg" id="accessories">
+      {/* ── AKSESUARLAR ── */}
+      <section className="section section-dark-bg reveal" id="accessories" ref={addReveal}>
         <div className="section-head">
-          <h2 className="section-title">Kitab Ayracları & Paketləmə</h2>
-          <p className="section-subtitle">Sizin üçün hazırladığımız xüsusi kitab ayracları və premium estetik hədiyyə paketləmələri.</p>
+          <h2 className="section-title">{t.accTitle}</h2>
+          <p className="section-subtitle">{t.accDesc}</p>
         </div>
-        
         <div className="accessories-grid">
           {ACCESSORIES_DATA.map(acc => (
             <div className="accessory-card" key={acc.id}>
-              <div className="acc-icon-box">
-                {acc.type === 'packaging' ? '🎁' : '🔖'}
-              </div>
+              <div className="acc-icon-box">{acc.type === 'packaging' ? '🎁' : '🔖'}</div>
               <div className="acc-details">
                 <div className="acc-title">{acc.title}</div>
                 <div className="acc-desc">{acc.desc}</div>
                 <div className="acc-footer">
                   <span className="acc-price">{acc.price.toFixed(2)} ₼</span>
-                  <button 
-                    className={`add-btn ${cart[acc.id] ? 'added' : ''}`}
-                    onClick={() => addToCart(acc)}
-                  >
-                    {cart[acc.id] ? 'Əlavə edildi' : 'Səbətə at'}
+                  <button className={`add-btn ${cart[acc.id] ? 'added' : ''}`} onClick={() => addToCart(acc)}>
+                    {cart[acc.id] ? t.accAdded : t.accAdd}
                   </button>
                 </div>
               </div>
@@ -274,11 +396,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── ENDİRİMLƏR SECTION ── */}
-      <section className="section" id="sale" style={{ borderTop: '1px solid #1d1d1f' }}>
-        <div className="section-head">
-          <h2 className="section-title">Xüsusi Təkliflər</h2>
-        </div>
+      {/* ── ENDİRİMLƏR ── */}
+      <section className="section reveal" id="sale" ref={addReveal}>
+        <div className="section-head"><h2 className="section-title">{t.saleTitle}</h2></div>
         <div className="books-grid">
           {SALE_DATA.map(b => (
             <div className="book-card" key={b.id}>
@@ -287,9 +407,9 @@ export default function Home() {
                   <span className="book-initial">{b.title[0]}</span>
                 </div>
                 <span className={`condition-tag ${b.isNewBook ? 'tag-new-book' : 'tag-used-book'}`}>
-                  {b.isNewBook ? 'Yeni' : 'İkinci Əl'}
+                  {b.isNewBook ? t.newTag : t.usedTag}
                 </span>
-                <span className="book-badge badge-sale">Endirim</span>
+                <span className="book-badge badge-sale">{t.saleTag}</span>
               </div>
               <div className="book-body">
                 <div className="book-title" title={b.title}>{b.title}</div>
@@ -299,11 +419,8 @@ export default function Home() {
                     <span className="price-main">{b.price.toFixed(2)} ₼</span>
                     <span className="price-old">{b.old.toFixed(2)} ₼</span>
                   </div>
-                  <button 
-                    className={`add-btn ${cart[b.id] ? 'added' : ''}`}
-                    onClick={() => addToCart(b)}
-                  >
-                    {cart[b.id] ? 'Səbətdə' : 'Əlavə et'}
+                  <button className={`add-btn ${cart[b.id] ? 'added' : ''}`} onClick={() => addToCart(b)}>
+                    {cart[b.id] ? t.added : t.addBtn}
                   </button>
                 </div>
               </div>
@@ -313,26 +430,26 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer>
+      <footer className="reveal" ref={addReveal}>
         <div className="footer-inner">
           <div className="footer-brand">
             <div className="footer-logo">folio<span className="logo-dot">.</span></div>
-            <p>Naxçıvanın minimalist dizaynlı premium kitab və oxu aksesuarları mağazası.</p>
+            <p>{t.footerDesc}</p>
           </div>
           <div className="footer-col">
-            <h4>Koleksiyalar</h4>
-            <a href="#books">Yeni Nəşrlər</a>
-            <a href="#books">İkinci Əl Kitablar</a>
-            <a href="#accessories">Kitab Ayracları</a>
+            <h4>{t.footerCollections}</h4>
+            <a href="#books">{t.footerNewEd}</a>
+            <a href="#books">{t.footerUsedB}</a>
+            <a href="#accessories">{t.footerBookmarks}</a>
           </div>
           <div className="footer-col">
-            <h4>Xidmət</h4>
-            <a href="#">Çatdırılma: Naxçıvan</a>
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}`}>WhatsApp Sifariş</a>
+            <h4>{t.footerService}</h4>
+            <a href="#">{t.footerDelivery}</a>
+            <a href={`https://wa.me/${WHATSAPP_NUMBER}`}>{t.footerWhatsapp}</a>
           </div>
         </div>
         <div className="footer-bottom">
-          <p>© 2026 folio. Bütün hüquqlar qorunur.</p>
+          <p>© 2026 folio. {t.footerRights}</p>
           <p>Azərbaycan · ₼ AZN</p>
         </div>
       </footer>
@@ -341,13 +458,12 @@ export default function Home() {
       {isCartOpen && <div className="cart-overlay" onClick={() => setIsCartOpen(false)}></div>}
       <div className={`cart-panel ${isCartOpen ? 'open' : ''}`}>
         <div className="cart-hdr">
-          <h3>Səbətiniz</h3>
+          <h3>{t.cartTitle}</h3>
           <button className="close-cart" onClick={() => setIsCartOpen(false)}>✕</button>
         </div>
-        
         <div className="cart-body">
           {cartItems.length === 0 ? (
-            <div className="cart-empty">Səbətiniz boşdur.</div>
+            <div className="cart-empty">{t.cartEmpty}</div>
           ) : (
             <>
               {cartItems.map(item => (
@@ -357,7 +473,7 @@ export default function Home() {
                       <span className="ci-title">{item.title}</span>
                       {item.isNewBook !== undefined && (
                         <span className={`cart-cond-label ${item.isNewBook ? 'lbl-n' : 'lbl-u'}`}>
-                          {item.isNewBook ? 'Yeni' : '2-ci Əl'}
+                          {item.isNewBook ? t.newTag : t.usedTag}
                         </span>
                       )}
                     </div>
@@ -377,202 +493,220 @@ export default function Home() {
 
               {!cart["a1"] && (
                 <div className="cart-suggestion-box">
-                  <div className="sugg-text">🎁 Bu sifarişi estetik hədiyyə paketi etmək istəyirsiniz?</div>
-                  <button className="sugg-add-btn" onClick={() => addToCart(ACCESSORIES_DATA[0])}>+ 1.50 ₼ Əlavə Et</button>
+                  <div className="sugg-text">🎁 {t.suggText}</div>
+                  <button className="sugg-add-btn" onClick={() => addToCart(ACCESSORIES_DATA[0])}>{t.suggBtn}</button>
                 </div>
               )}
             </>
           )}
         </div>
-        
         {cartItems.length > 0 && (
           <div className="cart-ftr">
-            <div className="cart-total-row">
-              <span>Ümumi Məbləğ:</span>
-              <strong>{cartTotal.toFixed(2)} ₼</strong>
-            </div>
-            <button className="checkout-btn" onClick={handleCheckoutWhatsApp}>Sifarişi WhatsApp ilə Tamamla</button>
+            <div className="cart-total-row"><span>{t.cartTotal}</span><strong>{cartTotal.toFixed(2)} ₼</strong></div>
+            <button className="checkout-btn" onClick={handleCheckoutWhatsApp}>{t.checkout}</button>
           </div>
         )}
       </div>
 
       <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
 
-      {/* ── CSS STYLES ── */}
+      {/* ── CSS ── */}
       <style jsx global>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; background-color: #000; }
-        
-        .nav-wrapper {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          padding: 12px 24px 0 24px;
-        }
-        .apple-nav-floating {
-          background: rgba(22, 22, 23, 0.75); 
-          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 30px; 
-          max-width: 1024px; margin: 0 auto;
-        }
-        .nav-container { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-        
-        .nav-logo-apple { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 1.3rem; color: #f5f5f7; text-decoration: none; letter-spacing: -0.6px; }
-        .logo-dot { color: #0071e3; }
-        
-        .nav-links { display: flex; list-style: none; gap: 20px; align-items: center; }
-        .nav-links a { color: #86868b; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
-        .nav-links a:hover { color: #f5f5f7; }
-        
-        .nav-links button { background: none; border: none; color: #86868b; font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: color 0.2s; }
-        .nav-links button:hover, .nav-links button.active-link { color: #f5f5f7; font-weight: 500; }
-        
-        .nav-right { display: flex; align-items: center; gap: 16px; }
-        .nav-search input { background: rgba(255,255,255,0.06); border: none; outline: none; color: #fff; font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; width: 110px; }
-        .cart-btn { background: none; border: none; color: #86868b; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .cart-count { background: #f5f5f7; color: #000; font-size: 0.7rem; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+        html { scroll-behavior: smooth; }
 
-        /* Hero */
-        .hero { min-height: 60vh; display: flex; align-items: center; padding: 110px 16px 40px; background: #000; }
-        .hero-inner { max-width: 1024px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center; }
-        .hero-tag { font-size: 0.85rem; font-weight: 500; color: #86868b; margin-bottom: 12px; }
-        .hero h1 { font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 700; letter-spacing: -1px; color: #f5f5f7; line-height: 1.15; margin-bottom: 16px; }
-        .hero-desc { color: #86868b; font-size: 1.05rem; line-height: 1.5; margin-bottom: 24px; }
-        .hero-actions { display: flex; align-items: center; gap: 16px; }
-        .btn-apple-primary { background: #0071e3; color: #fff; border-radius: 980px; padding: 10px 20px; font-size: 0.85rem; text-decoration: none; }
-        .btn-apple-link { color: #0066cc; text-decoration: none; font-size: 0.9rem; }
+        /* ---- Theme variables ---- */
+        .theme-dark {
+          --bg: #000000; --bg-alt: #0a0a0c; --surface: #161617; --surface-2: #1c1c1e; --surface-3: #232326;
+          --border: #2d2d2f; --text: #f5f5f7; --text-dim: #86868b; --accent: #0071e3;
+        }
+        .theme-light {
+          --bg: #fafafa; --bg-alt: #f1f1f3; --surface: #ffffff; --surface-2: #f0f0f2; --surface-3: #e8e8ea;
+          --border: #e2e2e4; --text: #1d1d1f; --text-dim: #6e6e73; --accent: #0066cc;
+        }
+        .app-root { background: var(--bg); color: var(--text); min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background 0.25s ease, color 0.25s ease; }
 
-        /* Book Mockup */
+        /* ---- Navbar ---- */
+        .nav-wrapper { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 22px 24px 0 24px; }
+        .apple-nav-floating { background: var(--surface); opacity: 0.92; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          border: 1px solid var(--border); border-radius: 16px; max-width: 1100px; margin: 0 auto; box-shadow: 0 4px 24px rgba(0,0,0,0.18); }
+        .nav-container { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+
+        .nav-logo-apple { font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; letter-spacing: -0.4px; }
+        .logo-dot { color: var(--accent); }
+
+        .nav-links { display: flex; list-style: none; gap: 22px; align-items: center; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.82rem; font-weight: 500; }
+        .nav-links a:hover { color: var(--text); }
+        .nav-links button { background: none; border: none; color: var(--text-dim); font-size: 0.82rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .nav-links button:hover, .nav-links button.active-link { color: var(--text); }
+
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-search input { background: var(--surface-2); border: 1px solid var(--border); outline: none; color: var(--text); font-size: 0.78rem; padding: 6px 12px; border-radius: 8px; width: 110px; }
+        .lang-select { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 0.75rem; font-weight: 600; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+        .theme-toggle { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .cart-btn { background: none; border: 1px solid var(--border); color: var(--text); font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .cart-count { background: var(--accent); color: #fff; font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+
+        .hamburger { display: none; flex-direction: column; justify-content: center; gap: 4px; width: 32px; height: 32px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+        .hamburger span { width: 16px; height: 2px; background: var(--text); margin: 0 auto; }
+
+        /* ---- Mobile menu ---- */
+        .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: 200; }
+        .mobile-menu { position: fixed; top: 0; right: 0; bottom: 0; width: 78%; max-width: 320px; background: var(--surface); border-left: 1px solid var(--border);
+          z-index: 201; transform: translateX(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; padding: 18px; gap: 6px; }
+        .mobile-menu.open { transform: translateX(0); }
+        .mobile-menu-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .mobile-search input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; }
+        .mobile-link { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 0.95rem; padding: 12px 4px; text-decoration: none; cursor: pointer; }
+        .mobile-menu-footer { margin-top: auto; display: flex; gap: 10px; padding-top: 12px; }
+        .mobile-menu-footer .theme-toggle { width: auto; flex: 1; font-size: 0.78rem; font-weight: 600; }
+
+        /* ---- Hero (full screen) ---- */
+        .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 16px 40px; position: relative; }
+        .hero-inner { max-width: 1100px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center; }
+        .hero-tag { font-size: 0.82rem; font-weight: 600; color: var(--accent); margin-bottom: 14px; letter-spacing: 0.2px; }
+        .hero h1 { font-size: clamp(2rem, 3.6vw, 3.2rem); font-weight: 700; letter-spacing: -1px; color: var(--text); line-height: 1.15; margin-bottom: 18px; }
+        .hero-desc { color: var(--text-dim); font-size: 1.05rem; line-height: 1.6; margin-bottom: 26px; max-width: 480px; }
+        .hero-actions { display: flex; align-items: center; gap: 18px; }
+        .btn-apple-primary { background: var(--accent); color: #fff; border-radius: 8px; padding: 11px 22px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+        .btn-apple-link { color: var(--accent); text-decoration: none; font-size: 0.88rem; font-weight: 500; }
+        .scroll-hint { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: var(--text-dim); font-size: 1.2rem; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%,100%{transform:translate(-50%,0);} 50%{transform:translate(-50%,8px);} }
+
         .hero-visual { display: flex; justify-content: center; }
-        .apple-book-mockup { width: 180px; height: 240px; background: #1c1c1e; border-radius: 3px 10px 10px 3px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; }
-        .book-spine { width: 10px; background: rgba(0,0,0,0.2); }
-        .book-cover-content { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .mock-logo { font-size: 0.65rem; color: #86868b; margin-bottom: auto; }
-        .mock-title { font-size: 1.2rem; font-weight: 600; color: #fff; }
-        .mock-author { font-size: 0.75rem; color: #86868b; margin-bottom: auto; }
+        .apple-book-mockup { width: 190px; height: 250px; background: var(--surface-2); border-radius: 4px 12px 12px 4px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.35); display: flex; border: 1px solid var(--border); }
+        .book-spine { width: 10px; background: rgba(0,0,0,0.15); }
+        .book-cover-content { flex: 1; padding: 22px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .mock-logo { font-size: 0.65rem; color: var(--text-dim); margin-bottom: auto; letter-spacing: 1px; }
+        .mock-title { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+        .mock-author { font-size: 0.75rem; color: var(--text-dim); margin-bottom: auto; }
 
-        /* Structural Layouts */
-        .section { max-width: 1024px; margin: 0 auto; padding: 50px 16px; }
-        .section-dark-bg { background: #0a0a0c; max-width: 100vw; padding: 60px max(16px, calc((100vw - 1024px)/2)); border-top: 1px solid #1d1d1f; border-bottom: 1px solid #1d1d1f; }
-        .section-head-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-        .section-title { font-size: 1.6rem; font-weight: 600; color: #f5f5f7; }
-        .section-subtitle { color: #86868b; font-size: 0.95rem; margin-top: 4px; margin-bottom: 24px; }
+        /* ---- Scroll reveal ---- */
+        .reveal { opacity: 0; transform: translateY(36px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.in-view { opacity: 1; transform: translateY(0); }
 
-        /* Condition Switcher */
-        .condition-switcher { background: #1c1c1e; padding: 3px; border-radius: 8px; display: flex; }
-        .condition-switcher button { background: transparent; border: none; color: #86868b; padding: 6px 14px; font-size: 0.8rem; font-weight: 500; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .condition-switcher button.active { background: #323236; color: #fff; }
+        /* ---- Sections ---- */
+        .section { max-width: 1100px; margin: 0 auto; padding: 60px 16px; }
+        .section-dark-bg { background: var(--bg-alt); max-width: 100vw; padding: 70px max(16px, calc((100vw - 1100px)/2)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .section-head-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
+        .section-title { font-size: 1.7rem; font-weight: 700; color: var(--text); letter-spacing: -0.4px; }
+        .section-subtitle { color: var(--text-dim); font-size: 0.95rem; margin-top: 6px; margin-bottom: 26px; max-width: 560px; }
 
-        /* Pills Filters */
-        .cat-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
-        .pill { padding: 6px 12px; border-radius: 980px; border: 1px solid #333336; background: transparent; color: #f5f5f7; font-size: 0.8rem; cursor: pointer; }
-        .pill.active { background: #f5f5f7; border-color: #f5f5f7; color: #000; }
+        .condition-switcher { background: var(--surface-2); border: 1px solid var(--border); padding: 3px; border-radius: 8px; display: flex; }
+        .condition-switcher button { background: transparent; border: none; color: var(--text-dim); padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
+        .condition-switcher button.active { background: var(--accent); color: #fff; }
 
-        /* Books Grid */
-        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
-        .book-card { background: #161617; border-radius: 10px; overflow: hidden; border: 1px solid #2d2d2f; display: flex; flex-direction: column; position: relative; }
-        .book-thumb { aspect-ratio: 3/3.6; width: 100%; background: #09090a; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #2d2d2f; }
-        
-        .premium-book-placeholder { width: 85px; height: 115px; background: #232326; border-radius: 3px 6px 6px 3px; display: flex; align-items: center; justify-content: center; border-left: 3px solid rgba(0,0,0,0.25); box-shadow: 0 8px 16px rgba(0,0,0,0.4); }
+        .cat-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+        .pill { padding: 6px 13px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 0.8rem; font-weight: 500; cursor: pointer; }
+        .pill.active { background: var(--text); border-color: var(--text); color: var(--bg); }
+
+        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 18px; }
+        .book-card { background: var(--surface); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
+        .book-thumb { aspect-ratio: 3/3.6; width: 100%; background: var(--bg-alt); display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid var(--border); }
+
+        .premium-book-placeholder { width: 85px; height: 115px; background: var(--surface-3); border-radius: 3px 6px 6px 3px; display: flex; align-items: center; justify-content: center; border-left: 3px solid rgba(0,0,0,0.18); box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
         .used-placeholder { background: #19222b; }
         .sale-placeholder { background: #2b1818; }
-        .book-initial { font-size: 1.6rem; font-weight: 600; color: #6e6e73; }
-        
-        .condition-tag { position: absolute; bottom: 8px; left: 8px; font-size: 0.65rem; font-weight: 500; padding: 2px 6px; border-radius: 4px; }
-        .tag-new-book { background: rgba(48, 209, 88, 0.15); color: #30d158; border: 1px solid rgba(48, 209, 88, 0.2); }
-        .tag-used-book { background: rgba(10, 132, 255, 0.15); color: #0a84ff; border: 1px solid rgba(10, 132, 255, 0.2); }
+        .book-initial { font-size: 1.6rem; font-weight: 700; color: var(--text-dim); }
 
-        .book-badge { position: absolute; top: 8px; left: 8px; font-size: 0.6rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .condition-tag { position: absolute; bottom: 8px; left: 8px; font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 5px; }
+        .tag-new-book { background: rgba(48, 209, 88, 0.15); color: #2bb352; border: 1px solid rgba(48, 209, 88, 0.25); }
+        .tag-used-book { background: rgba(10, 132, 255, 0.15); color: #0a84ff; border: 1px solid rgba(10, 132, 255, 0.25); }
+
+        .book-badge { position: absolute; top: 8px; left: 8px; font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; }
         .badge-new { background: #1d3528; color: #30d158; }
         .badge-best { background: #3a2d16; color: #ff9f0a; }
         .badge-sale { background: #3b1d1d; color: #ff453a; }
-        
-        .book-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
-        .book-title { font-size: 0.88rem; font-weight: 600; color: #f5f5f7; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .book-author { font-size: 0.78rem; color: #86868b; margin-bottom: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+        .book-body { padding: 13px; flex: 1; display: flex; flex-direction: column; }
+        .book-title { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .book-author { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .book-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
-        .price-main { font-size: 0.95rem; font-weight: 600; color: #fff; }
-        .price-old { font-size: 0.75rem; color: #86868b; text-decoration: line-through; margin-left: 4px; }
-        
-        .add-btn { background: transparent; color: #0071e3; border: 1px solid #0071e3; border-radius: 980px; padding: 4px 12px; font-size: 0.7rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-        .add-btn:hover { background: #0071e3; color: #fff; }
+        .price-main { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .price-old { font-size: 0.75rem; color: var(--text-dim); text-decoration: line-through; margin-left: 4px; }
+
+        .add-btn { background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 5px 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .add-btn:hover { background: var(--accent); color: #fff; }
         .add-btn.added { background: #30d158; border-color: #30d158; color: #fff; }
 
-        /* Accessories Grid */
-        .accessories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 10px; }
-        .accessory-card { background: #161617; border: 1px solid #2d2d2f; border-radius: 12px; padding: 16px; display: flex; gap: 16px; align-items: center; }
-        .acc-icon-box { font-size: 2rem; background: #232326; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .accessories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; margin-top: 10px; }
+        .accessory-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; gap: 16px; align-items: center; }
+        .acc-icon-box { font-size: 2rem; background: var(--surface-3); width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
         .acc-details { flex: 1; }
-        .acc-title { font-size: 0.9rem; font-weight: 600; color: #fff; }
-        .acc-desc { font-size: 0.78rem; color: #86868b; margin-bottom: 8px; }
+        .acc-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .acc-desc { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 10px; }
         .acc-footer { display: flex; justify-content: space-between; align-items: center; }
-        .acc-price { font-size: 0.95rem; font-weight: 600; color: #fff; }
+        .acc-price { font-size: 0.95rem; font-weight: 700; color: var(--text); }
 
-        /* Footer */
-        footer { background: #161617; border-top: 1px solid #2d2d2f; padding: 40px 16px; color: #86868b; font-size: 0.8rem; }
-        .footer-inner { max-width: 1024px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-        .footer-brand .footer-logo { font-size: 1.2rem; font-weight: 700; color: #f5f5f7; margin-bottom: 6px; }
-        .footer-col h4 { color: #f5f5f7; font-size: 0.8rem; margin-bottom: 10px; }
-        .footer-col a { display: block; color: #86868b; text-decoration: none; margin-bottom: 6px; }
-        .footer-bottom { max-width: 1024px; margin: 0 auto; border-top: 1px solid #2d2d2f; padding-top: 14px; display: flex; justify-content: space-between; }
+        footer { background: var(--surface); border-top: 1px solid var(--border); padding: 50px 16px 30px; color: var(--text-dim); font-size: 0.8rem; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 28px; margin-bottom: 26px; }
+        .footer-brand .footer-logo { font-size: 1.2rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .footer-col h4 { color: var(--text); font-size: 0.8rem; margin-bottom: 12px; font-weight: 700; }
+        .footer-col a { display: block; color: var(--text-dim); text-decoration: none; margin-bottom: 8px; }
+        .footer-bottom { max-width: 1100px; margin: 0 auto; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; }
 
-        /* Cart */
+        /* ---- Cart ---- */
         .cart-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 200; }
-        .cart-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 360px; background: #161617; border-left: 1px solid #2d2d2f; z-index: 201; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.2s ease-out; }
+        .cart-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 380px; background: var(--surface); border-left: 1px solid var(--border); z-index: 201; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s ease-out; }
         .cart-panel.open { transform: translateX(0); }
-        .cart-hdr { padding: 16px; border-bottom: 1px solid #2d2d2f; display: flex; align-items: center; justify-content: space-between; }
-        .close-cart { background: none; border: none; color: #86868b; font-size: 1.1rem; cursor: pointer; }
-        .cart-body { flex: 1; overflow-y: auto; padding: 16px; }
-        .cart-empty { text-align: center; color: #86868b; padding-top: 30px; }
-        .cart-item { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #2d2d2f; }
-        
+        .cart-hdr { padding: 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .cart-hdr h3 { font-weight: 700; }
+        .close-cart { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; cursor: pointer; }
+        .cart-body { flex: 1; overflow-y: auto; padding: 18px; }
+        .cart-empty { text-align: center; color: var(--text-dim); padding-top: 30px; }
+        .cart-item { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+
         .ci-title-wrapper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .ci-title { font-weight: 600; color: #fff; font-size: 0.85rem; }
-        .cart-cond-label { font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; font-weight: 600; }
-        .lbl-n { background: rgba(48,209,88,0.15); color: #30d158; }
+        .ci-title { font-weight: 700; color: var(--text); font-size: 0.85rem; }
+        .cart-cond-label { font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+        .lbl-n { background: rgba(48,209,88,0.15); color: #2bb352; }
         .lbl-u { background: rgba(10,132,255,0.15); color: #0a84ff; }
-        
-        .ci-author { font-size: 0.75rem; color: #86868b; }
-        .ci-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
-        .ci-price { font-weight: 600; color: #fff; }
+
+        .ci-author { font-size: 0.75rem; color: var(--text-dim); }
+        .ci-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+        .ci-price { font-weight: 700; color: var(--text); }
         .qty-row { display: flex; align-items: center; gap: 6px; }
-        .q-btn { width: 22px; height: 22px; background: #2d2d2f; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
-        .q-num { font-size: 0.8rem; color: #fff; }
-        .q-del { background: none; border: none; color: #ff453a; cursor: pointer; font-size: 0.75rem; margin-left: 6px; }
-        
-        .cart-suggestion-box { background: #232326; border: 1px dashed #3a3a3c; padding: 12px; border-radius: 8px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .sugg-text { font-size: 0.78rem; color: #f5f5f7; }
-        .sugg-add-btn { background: #fff; color: #000; border: none; border-radius: 6px; padding: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+        .q-btn { width: 22px; height: 22px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); cursor: pointer; border-radius: 5px; }
+        .q-num { font-size: 0.8rem; color: var(--text); }
+        .q-del { background: none; border: none; color: #ff453a; cursor: pointer; font-size: 0.75rem; margin-left: 6px; font-weight: 600; }
 
-        .cart-ftr { padding: 16px; border-top: 1px solid #2d2d2f; }
+        .cart-suggestion-box { background: var(--surface-3); border: 1px dashed var(--border); padding: 14px; border-radius: 8px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .sugg-text { font-size: 0.78rem; color: var(--text); }
+        .sugg-add-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+
+        .cart-ftr { padding: 18px; border-top: 1px solid var(--border); }
         .cart-total-row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 0.9rem; }
-        .cart-total-row strong { color: #fff; font-size: 1.05rem; }
-        .checkout-btn { width: 100%; background: #0071e3; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 500; cursor: pointer; }
+        .cart-total-row strong { color: var(--text); font-size: 1.05rem; }
+        .checkout-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 13px; font-weight: 700; cursor: pointer; }
 
-        /* Toast */
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #f5f5f7; color: #000; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 500; z-index: 300; opacity: 0; transition: all 0.2s ease; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: var(--bg); padding: 9px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; z-index: 300; opacity: 0; transition: all 0.25s ease; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-        /* MOBILE RESPONSIVE */
+        /* ---- Responsive: hamburger devreye girer ---- */
+        @media (max-width: 860px) {
+          .nav-links, .nav-search { display: none; }
+          .hamburger { display: flex; }
+        }
+
         @media (max-width: 768px) {
-          .nav-wrapper { padding: 8px 12px 0 12px; }
-          .apple-nav-floating { border-radius: 20px; }
-          .nav-container { padding: 0 12px; height: 48px; }
-          .nav-links, .nav-search { display: none; } 
-          
-          .hero-inner { grid-template-columns: 1fr; text-align: center; padding-top: 20px; }
+          .nav-wrapper { padding: 14px 12px 0 12px; }
+          .apple-nav-floating { border-radius: 14px; }
+          .nav-container { padding: 0 14px; height: 52px; }
+          .lang-select { display: none; }
+
+          .hero { min-height: 92vh; padding-top: 90px; }
+          .hero-inner { grid-template-columns: 1fr; text-align: center; }
           .hero-actions { justify-content: center; }
           .hero-visual { display: none; }
-          
-          .books-grid { 
-            grid-template-columns: repeat(2, 1fr) !important; 
-            gap: 10px; 
-          }
+
+          .books-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
           .book-thumb { aspect-ratio: 3/3.4; }
           .premium-book-placeholder { width: 68px; height: 92px; }
           .book-title { font-size: 0.82rem; }
           .book-author { font-size: 0.72rem; }
           .price-main { font-size: 0.88rem; }
-          .add-btn { padding: 3px 8px; font-size: 0.65rem; }
+          .add-btn { padding: 4px 9px; font-size: 0.65rem; }
 
           .accessories-grid { grid-template-columns: 1fr; }
           .footer-inner { grid-template-columns: 1fr; }
