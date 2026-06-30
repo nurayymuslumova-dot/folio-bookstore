@@ -152,7 +152,7 @@ export default function Home() {
             author: row.author?.trim() || "",
             price: parseFloat(row.price) || 0,
             old: row.old && row.old.trim() !== "" ? parseFloat(row.old) : null,
-            isNewBook: (row.isNewBook || "").trim().toUpperCase() === "TRUE",
+            isNewBook: ["TRUE", "DOĞRU", "DOGRU", "1", "EVET", "BƏLİ"].includes((row.isNewBook || "").trim().toUpperCase()),
             cat: row.cat?.trim() || "",
             badge: row.badge && row.badge.trim() !== "" ? row.badge.trim() : null,
             image: row.image?.trim() || "",
@@ -245,7 +245,7 @@ export default function Home() {
   };
  
   const filteredBooks = booksData.filter(b => {
-    const matchesCat = catFilter === '' || b.cat === catFilter;
+    const matchesCat = catFilter === '' || (b.cat || '').trim().toLowerCase() === catFilter.trim().toLowerCase();
     const matchesSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.author.toLowerCase().includes(searchQuery.toLowerCase());
     if (conditionFilter === 'new') return matchesCat && matchesSearch && b.isNewBook;
     if (conditionFilter === 'used') return matchesCat && matchesSearch && !b.isNewBook;
