@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
@@ -13,10 +12,9 @@ const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2lhYaH-
 /* ───────────────────────────────────────────────
    SABİT MƏLUMATLAR (endirim və aksesuarlar hələ kodda qalır)
 ─────────────────────────────────────────────── */
-const SALE_DATA = [
-  {id:"s1",  title:"Uşaq Masalları",       author:"Müxtəlif Müəlliflər",     price:5.99,  old:9.99,  isNewBook: true,  cat:"Uşaq",         badge:"sale"},
-  {id:"s2", title:"Sapiens",              author:"Yuval Noah Harari",       price:9.00,  old:20.00, isNewBook: false, cat:"Tarix",        badge:"sale"},
-];
+/* ───────────────────────────────────────────────
+   Endirimli kitablar artıq Sheet-dəki "onSale" sütunundan gəlir
+─────────────────────────────────────────────── */
  
 const ACCESSORIES_DATA = [
   {id:"a1", title:"Premium Hədiyyə Paketləməsi", desc:"Xüsusi möhürlü və qoxulu sənətkar kağızı", price:1.50, type:"packaging"},
@@ -156,6 +154,7 @@ export default function Home() {
             cat: row.cat?.trim() || "",
             badge: row.badge && row.badge.trim() !== "" ? row.badge.trim() : null,
             image: row.image?.trim() || "",
+            onSale: ["TRUE", "DOĞRU", "DOGRU", "1", "EVET", "BƏLİ"].includes((row.onSale || "").trim().toUpperCase()),
           }));
         setBooksData(books);
         setBooksLoading(false);
@@ -255,6 +254,8 @@ export default function Home() {
   const cartItems = Object.values(cart);
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
   const cartTotal = cartItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+ 
+  const saleBooks = booksData.filter(b => b.onSale);
  
   const goTo = (cond) => { setConditionFilter(cond); setIsMenuOpen(false); window.location.href = '#books'; };
  
@@ -447,7 +448,7 @@ export default function Home() {
       <section className="section reveal" id="sale" ref={addReveal}>
         <div className="section-head"><h2 className="section-title">{t.saleTitle}</h2></div>
         <div className="books-grid">
-          {SALE_DATA.map(b => (
+          {saleBooks.map(b => (
             <div className="book-card" key={b.id}>
               <div className="book-thumb">
                 {b.image ? (
@@ -468,7 +469,7 @@ export default function Home() {
                 <div className="book-footer">
                   <div className="price-block">
                     <span className="price-main">{b.price.toFixed(2)} ₼</span>
-                    <span className="price-old">{b.old.toFixed(2)} ₼</span>
+                    {b.old != null && <span className="price-old">{b.old.toFixed(2)} ₼</span>}
                   </div>
                   <button className={`add-btn ${cart[b.id] ? 'added' : ''}`} onClick={() => addToCart(b)}>
                     {cart[b.id] ? t.added : t.addBtn}
